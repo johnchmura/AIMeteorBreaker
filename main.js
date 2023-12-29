@@ -64,6 +64,16 @@ function saveBestPlayerNetwork() {
 
     console.log(bestPlayer.player.points)
     localStorage.setItem('bestPlayerNetwork', JSON.stringify(bestPlayer.player.brain));
+
+    if(localStorage.getItem("score")){
+        console.log(localStorage.getItem("score"));
+        if(localStorage.getItem("score") < bestPlayer.player.points){
+            localStorage.setItem('score',bestPlayer.player.points);
+        }
+    }else{
+        localStorage.setItem('score',bestPlayer.player.points);
+    }
+   
 }
 function getGreatestScore() {
     const bestPlayer = gameInstances.reduce((best, current) => {
@@ -90,13 +100,13 @@ for (let i = 1; i <= numGames; i++) {
 }
 
 if (localStorage.getItem("bestPlayerNetwork")) {
-  
+    console.log("loaded");
     const bestBrain = JSON.parse(localStorage.getItem("bestPlayerNetwork"));
     gameInstances[0].player.brain = bestBrain;
 
     
     for (let i = 1; i < gameInstances.length; i++) {
-        NeuralNetwork.mutate(gameInstances[i].player.brain, 0.2);
+        NeuralNetwork.mutate(gameInstances[i].player.brain, .10);
     }
 }
 

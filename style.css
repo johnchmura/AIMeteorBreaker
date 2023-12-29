@@ -6,6 +6,6 @@ body{
 }
 
 .gameCanvas{
-    margin-top: 50px;
+    margin: 50px;
     background: lightgray;
 }
