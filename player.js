@@ -1,5 +1,5 @@
 class Player {
-    constructor(x, y, width, height,shootCooldown,canvasWidth,canvasHeight) {
+    constructor(x, y, width, height,shootCooldown,canvasWidth,canvasHeight,controlType) {
         this.x = x;
         this.y = y;
         this.width = width;
@@ -19,6 +19,12 @@ class Player {
 
         this.sensor=new Sensor(this,canvasWidth,canvasHeight);
         this.controls = new Controls();
+
+        this.useBrain=controlType=="AI";
+
+        this.brain=new NeuralNetwork(
+            [this.sensor.rayCount,6,4]
+        );
     }
 
     update(asteroids) {
@@ -26,7 +32,17 @@ class Player {
         this.#shoot();
         this.#updateProjectiles(asteroids);
         this.sensor.update(asteroids);
+        const offsets=this.sensor.readings.map(
+            s=>s==null?0:1-s.offset
+        );
+        const outputs=NeuralNetwork.feedForward(offsets,this.brain);
         this.#updateCooldown();
+
+        if(this.useBrain){
+            this.controls.up=outputs[0];
+            this.controls.left=outputs[1];
+            this.controls.right=outputs[2];
+        }
     }
 
 
@@ -35,19 +51,22 @@ class Player {
         this.lives--;
 
         if (this.lives === 0) {
-            paused = true;
+            return true;
+        }
+        else{
+            return false;
         }
 
     }
 
     #move() {
         if (this.controls.left && this.x - this.width / 2 > 0) {
-            this.x -= 6;
+            this.x -= 10;
         }
 
         
         if (this.controls.right && this.x + this.width / 2 < this.canvasWidth) {
-            this.x += 6;
+            this.x += 10;
         }
     }
 

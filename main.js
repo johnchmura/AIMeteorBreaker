@@ -1,52 +1,103 @@
-const canvas = document.getElementById("mainCanvas");
-canvas.width = 500;
-canvas.height = 500;
+function createGameCanvas(id, width, height) {
+    const canvas = document.createElement('canvas');
+    canvas.className = 'gameCanvas';
+    canvas.id = id;
+    canvas.width = width;
+    canvas.height = height;
+    document.body.appendChild(canvas);
+    return canvas;
+}
 
-const ctx = canvas.getContext("2d");
-const player = new Player(100, 475, 30, 50, 450, canvas.width, canvas.height);
-const score = new Score(player);
-const lives = new Lives(player);
-const asteroids = [];
+function initializeGameInstance(canvasId, playerX, playerY, playerWidth, playerHeight, playerSpeed, numAsteroids) {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext("2d");
 
-let paused = false;
-let spawnTimer = 0;
-const spawnInterval = 2000;
+    const player = new Player(playerX, playerY, playerWidth, playerHeight, playerSpeed, canvas.width, canvas.height, "AI");
+    const score = new Score(player);
+    const lives = new Lives(player);
+    const asteroids = [];
+    
+    
+    const asteroidSpawner = new AsteroidSpawner(asteroids, canvas);
 
-document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-        paused = !paused;
-    }
-});
+    return { canvas, ctx, player, score, lives, asteroids, paused: false, spawnTimer: 0, spawnInterval: 2000, numAsteroids, asteroidSpawner };
+}
 
-animate();
+function animateGameInstance(gameInstance) {
+    const { ctx, player, asteroids, paused, spawnTimer, spawnInterval, asteroidSpawner } = gameInstance;
 
-function animate() {
     if (!paused) {
-        
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
         player.update(asteroids);
         player.draw(ctx);
-        score.draw(ctx);
-        lives.draw(ctx);
+        gameInstance.score.draw(ctx);
+        gameInstance.lives.draw(ctx);
 
-        for (let i = asteroids.length - 1; i >= 0; i--) {
-            const asteroid = asteroids[i];
+        for (let j = asteroids.length - 1; j >= 0; j--) {
+            const asteroid = asteroids[j];
             asteroid.update();
             asteroid.draw(ctx);
 
-            if (asteroid.y - asteroid.radius > canvas.height) {
-                asteroids.splice(i, 1);
-                player.subtractLife();
-            
-                ctx.clearRect(0, 0, canvas.width, 100);
-                lives.draw(ctx);
-                score.draw(ctx);
+            if (asteroid.y - asteroid.radius > ctx.canvas.height) {
+                asteroids.splice(j, 1);
+                if (player.subtractLife()) {
+                    gameInstance.paused = true;
+                }
+
+                ctx.clearRect(0, 0, ctx.canvas.width, 100);
+                gameInstance.lives.draw(ctx);
+                gameInstance.score.draw(ctx);
             }
         }
 
-        spawnTimer = updateSpawnTimer(spawnTimer, spawnInterval, asteroids, canvas);
+        asteroidSpawner.updateSpawnTimer();
     }
 
-    requestAnimationFrame(animate);
+    requestAnimationFrame(() => animateGameInstance(gameInstance));
 }
+
+function saveBestPlayerNetwork() {
+    const bestPlayer = gameInstances.reduce((best, current) => {
+        return current.player.points > best.player.points ? current : best;
+    }, gameInstances[0]);
+
+    console.log(bestPlayer.player.points)
+    localStorage.setItem('bestPlayerNetwork', JSON.stringify(bestPlayer.player.brain));
+}
+function getGreatestScore() {
+    const bestPlayer = gameInstances.reduce((best, current) => {
+        return current.player.points > best.player.points ? current : best;
+    }, gameInstances[0]);
+
+    console.log(bestPlayer.player.points)
+    
+}
+
+function discard() {
+    localStorage.removeItem("bestPlayerNetwork");
+}
+
+const numGames = 100;
+const gameInstances = [];
+
+for (let i = 1; i <= numGames; i++) {
+    const canvasId = "mainCanvas" + i;
+    const canvas = createGameCanvas(canvasId, 500, 500);
+
+    const gameInstance = initializeGameInstance(canvasId, 100, 475, 30, 50, 300, 3);
+    gameInstances.push(gameInstance);
+}
+
+if (localStorage.getItem("bestPlayerNetwork")) {
+  
+    const bestBrain = JSON.parse(localStorage.getItem("bestPlayerNetwork"));
+    gameInstances[0].player.brain = bestBrain;
+
+    
+    for (let i = 1; i < gameInstances.length; i++) {
+        NeuralNetwork.mutate(gameInstances[i].player.brain, 0.2);
+    }
+}
+
+gameInstances.forEach(gameInstance => animateGameInstance(gameInstance));

@@ -51,13 +51,7 @@ class Sensor {
     castRays() {
         this.rays = [];
         for (let i = 0; i < this.rayCount; i++) {
-            if(i==0){
-                console.log(lerp(
-                    this.raySpread / 3,
-                    -this.raySpread / 2,
-                    this.rayCount == 1 ? 0.5 : i / (this.rayCount - 1)
-                ))
-            }
+
             const rayAngle = lerp(
                 this.raySpread / 1.75,
                 -this.raySpread / 1.75,
@@ -69,9 +63,7 @@ class Sensor {
                 x: this.player.x - Math.sin(rayAngle) * this.rayLength,
                 y: this.player.y - Math.cos(rayAngle) * this.rayLength
             };
-            if(i==0){
-                console.log(start,end)
-            }
+
             this.rays.push([start, end]);
         }
     }
